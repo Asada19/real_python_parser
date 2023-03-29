@@ -43,21 +43,42 @@ URL = 'https://realpython.com/search?kind=article&level=basics'
 driver.get(URL)
 
 
-def login_to_website(mail, password):
-    login_url = driver.find_element('css selector', '.btn.text-light').get_attribute('href')
-    try:
-        driver.get(login_url)
-        email_field = driver.find_element('id', 'id_login')
-        email_field.send_keys(mail)
-        password_field = driver.find_element('id', 'id_password')
-        password_field.send_keys(password)
-        driver.find_element('name', 'jsSubmitButton').click()
+def login_to_website(mail, password, url=None):
+    driver.get(login_url)
+    email_field = driver.find_element('id', 'id_login')
+    password_field = driver.find_element('id', 'id_password')
 
-    except:
-        raise Exception('Login Error')
+    email_field.send_keys(mail)
+    password_field.send_keys(password)
+    driver.find_element('name', 'jsSubmitButton').click()
+
+def clear_article():
+    """
+    Удаление лишних элементов:
+    - навигационные панели
+    - реклама
+    """
+
+    driver.execute_script("""
+        const elements = [...document.querySelectorAll('div > .bg-light.sidebar-module.sidebar-module-inset'),
+                        ...document.querySelectorAll('div > .sidebar-module.sidebar-module-inset.p-0')]
+        for (let i = 0; i < elements.length; i++) {
+            elements[i].remove();
+            }
+    """)
+
+    driver.execute_script("""
+            const elements = document.querySelectorAll('a > .small.text-muted')
+            for (let i = 0; i < elements.length; i++) {
+                elements[i].remove();
+                }
+        """)
 
 
-login_to_website(EMAIL, PASSWORD)
+
+login_url = driver.find_element('css selector', '.btn.text-light').get_attribute('href')
+
+login_to_website(EMAIL, PASSWORD, login_url)
 driver.get(URL)
 last_height = driver.execute_script("return document.body.scrollHeight")
 
@@ -99,32 +120,16 @@ for item in res_list:
         item['preview'] = True
 
     content = driver.find_element('class name', 'article-body')
-
-    # Удаление навигационных элементов
-    driver.execute_script("""
-        const elements = [...document.querySelectorAll('div > .bg-light.sidebar-module.sidebar-module-inset'),
-                        ...document.querySelectorAll('div > .sidebar-module.sidebar-module-inset.p-0')]
-        for (let i = 0; i < elements.length; i++) {
-            elements[i].remove();
-            }
-    """)
-
-    # Удаление рекламы
-    driver.execute_script("""
-            const elements = document.querySelectorAll('a > .small.text-muted')
-            for (let i = 0; i < elements.length; i++) {
-                elements[i].remove();
-                }
-        """)
+    clear_article()
 
     item['full_article'] = content.text.replace('Remove ads', '')
     item['additional_links'] = [{'link_text': i.text,
                                  'link_url': i.get_attribute('href')}
                                 for i in content.find_elements('tag name', 'a') if i.text not in ['', 'Remove ads', 'remove_ads']]
-    time.sleep(1)
+    time.sleep(2)
 
 
-with open('tests.json', 'w') as article:
+with open('real_python_articles.json', 'w') as article:
     json.dump(res_list, article, ensure_ascii=False, indent=4)
 
 driver.quit()
