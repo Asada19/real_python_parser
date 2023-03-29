@@ -30,7 +30,9 @@ import json
 import time
 from selenium import webdriver
 from dotenv import load_dotenv
+from datetime import datetime
 
+start = datetime.now()
 load_dotenv()
 
 EMAIL = os.getenv('RP_EMAIL')
@@ -109,20 +111,21 @@ for item in res_list:
 
     # Удаление рекламы
     driver.execute_script("""
-            const elements = document.querySelectorAll('div > .sidebar-module.sidebar-module-inset.p-0')
+            const elements = document.querySelectorAll('a > .small.text-muted')
             for (let i = 0; i < elements.length; i++) {
                 elements[i].remove();
                 }
         """)
 
-    item['full_article'] = content.text
+    item['full_article'] = content.text.replace('Remove ads', '')
     item['additional_links'] = [{'link_text': i.text,
                                  'link_url': i.get_attribute('href')}
-                                for i in content.find_elements('tag name', 'a') if i.text != '']
-    time.sleep(3)
+                                for i in content.find_elements('tag name', 'a') if i.text not in ['', 'Remove ads', 'remove_ads']]
+    time.sleep(1)
 
 
-with open('real_python_articles.json', 'w') as article:
+with open('tests.json', 'w') as article:
     json.dump(res_list, article, ensure_ascii=False, indent=4)
 
 driver.quit()
+print(datetime.now() - start)
